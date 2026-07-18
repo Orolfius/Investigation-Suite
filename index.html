@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Text to HTML</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#f6f7fb;color:#172033;font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}.app{max-width:1100px;margin:auto;padding:38px 20px}h1{font-size:28px;margin:0 0 6px}.intro{margin:0 0 24px;color:#667085}.toolbar{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}.toolbar button,.toolbar select{background:#fff;border:1px solid #d0d5dd;border-radius:7px;padding:7px 10px;color:#344054;font:600 14px system-ui,sans-serif;cursor:pointer}.toolbar button:hover{border-color:#667085;background:#f9fafb}.toolbar .code,.editor,textarea{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.panes{display:grid;grid-template-columns:1fr 1fr;gap:18px}.pane{min-width:0}.pane-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}.pane h2{font-size:14px;margin:0}.pane-head button{border:0;border-radius:6px;background:#2956d7;color:#fff;padding:7px 12px;font-weight:600;cursor:pointer}.editor,textarea{width:100%;min-height:430px;resize:vertical;border:1px solid #d0d5dd;border-radius:9px;padding:14px;background:#fff;color:#172033;font-size:14px;line-height:1.55;outline:none}.editor{overflow:auto;white-space:pre-wrap}.editor:empty:before{content:attr(data-placeholder);color:#98a2b3}.editor:focus,textarea:focus{border-color:#2956d7;box-shadow:0 0 0 3px #dbe5ff}.editor pre,.editor .math{background:#e8eaed;border-radius:4px;color:#202124;font:10.5px/1.55 Consolas,"Courier New",monospace}.editor pre{display:block;margin:8px 0;padding:9px 11px;white-space:pre-wrap;word-break:break-word}.editor .math{display:inline-block;padding:2px 5px}.editor img{display:block;max-width:100%;height:auto;margin:8px 0}.editor .checklist{list-style:none;padding-left:4px}.editor .checklist li:before{content:'☐';margin-right:8px;color:#475467}.note{font-size:12px;color:#667085;margin:8px 0 0}@media(max-width:700px){.app{padding-top:24px}.panes{grid-template-columns:1fr}.editor,textarea{min-height:280px}}
+  </style>
+</head>
+<body>
+  <main class="app">
+    <h1>Text to HTML</h1>
+    <p class="intro">Format selected text, then edit or copy the generated HTML.</p>
+    <div class="toolbar" aria-label="Formatting tools">
+      <button data-command="bold" title="Bold"><b>B</b></button><button data-command="italic" title="Italic"><i>I</i></button><button data-command="underline" title="Underline"><u>U</u></button>
+      <button data-command="link" title="Insert link">🔗</button><button id="insert-image" title="Embed image as HTML">▣</button><input id="image-file" type="file" accept="image/*" hidden>
+      <select id="align" aria-label="Text alignment"><option value="">Alignment</option><option value="justifyLeft">Left</option><option value="justifyCenter">Center</option><option value="justifyRight">Right</option></select>
+      <button data-command="indent" title="Indent">⇥</button><button data-command="outdent" title="Outdent">⇤</button><button data-command="checklist" title="Checklist">☑</button><button data-command="insertUnorderedList" title="Bulleted list">☷</button><button data-command="insertOrderedList" title="Numbered list">☷₁</button>
+      <button class="code" data-command="formatBlock" data-value="pre">Code block</button><button class="code" data-command="math">Math</button><button data-command="removeFormat" title="Clear formatting">⌫</button>
+    </div>
+    <section class="panes">
+      <div class="pane"><div class="pane-head"><h2>Text input</h2></div><div id="source" class="editor" contenteditable="true" data-placeholder="Type or paste text here…" aria-label="Text input"></div><p class="note">Type normally, select text, then choose a format. Paste is supported.</p></div>
+      <div class="pane"><div class="pane-head"><h2>HTML output</h2><button id="copy">Copy HTML</button></div><textarea id="output" aria-label="Editable HTML output" spellcheck="false" placeholder="Your HTML will appear here…"></textarea><p class="note" id="status">Output is editable and formats automatically.</p></div>
+    </section>
+  </main>
+  <script>
+    const source=document.querySelector('#source'),output=document.querySelector('#output'),status=document.querySelector('#status'),file=document.querySelector('#image-file');let savedRange;
+    const blocks=new Set(['blockquote','div','h1','h2','h3','h4','h5','h6','li','ol','p','pre','ul']);
+    const beautify=html=>{const box=document.createElement('div');box.innerHTML=html;const lines=[];const render=(node,level)=>{if(node.nodeType===3){const text=node.textContent.trim();if(text)lines.push('  '.repeat(level)+text);return}if(node.nodeType!==1)return;const tag=node.tagName.toLowerCase(),nested=[...node.children].some(child=>blocks.has(child.tagName.toLowerCase()));if(!blocks.has(tag)||!nested){lines.push('  '.repeat(level)+node.outerHTML);return}const open=node.outerHTML.match(/^<[^>]+>/)[0],close=`</${tag}>`;lines.push('  '.repeat(level)+open);node.childNodes.forEach(child=>render(child,level+1));lines.push('  '.repeat(level)+close)};box.childNodes.forEach(node=>render(node,0));return lines.join('\n')};
+    const stripFontFormatting=html=>{const box=document.createElement('div');box.innerHTML=html;box.querySelectorAll('b,strong,i,em,u,font').forEach(node=>node.replaceWith(...node.childNodes));box.querySelectorAll('[style]').forEach(node=>{['font-family','font-size','font-style','font-weight','text-decoration','text-decoration-line','text-decoration-color','text-decoration-style'].forEach(property=>node.style.removeProperty(property));if(!node.getAttribute('style'))node.removeAttribute('style')});return box.innerHTML};
+    const sync=()=>output.value=beautify(stripFontFormatting(source.innerHTML));
+    const saveRange=()=>{const selection=getSelection();if(selection.rangeCount&&source.contains(selection.anchorNode))savedRange=selection.getRangeAt(0).cloneRange()};
+    const restoreRange=()=>{if(!savedRange)return;const selection=getSelection();selection.removeAllRanges();selection.addRange(savedRange)};
+    source.addEventListener('input',()=>{saveRange();sync()});source.addEventListener('keyup',saveRange);source.addEventListener('mouseup',saveRange);
+    output.addEventListener('input',()=>source.innerHTML=output.value);
+    output.addEventListener('blur',sync);
+    document.querySelectorAll('[data-command]').forEach(button=>{
+      button.addEventListener('mousedown',event=>event.preventDefault());
+      button.addEventListener('click',()=>{
+        source.focus();restoreRange();const command=button.dataset.command;
+        if(command==='link'){const url=prompt('Link URL:');if(url)document.execCommand('createLink',false,url);sync();return}
+        if(command==='checklist'){const selection=getSelection();if(!selection.rangeCount)return;const range=selection.getRangeAt(0),list=document.createElement('ul');list.className='checklist';range.extractContents().textContent.split('\n').filter(Boolean).forEach(text=>{const item=document.createElement('li');item.textContent=text;list.append(item)});range.insertNode(list);sync();return}
+        if(command==='math'){const selection=getSelection();if(!selection.rangeCount||selection.isCollapsed)return;const range=selection.getRangeAt(0),node=document.createElement('span');node.className='math';node.append(range.extractContents());range.insertNode(node);selection.removeAllRanges();sync();return}
+        document.execCommand(command,false,button.dataset.value||null);sync();
+      });
+    });
+    document.querySelector('#align').addEventListener('change',event=>{if(!event.target.value)return;source.focus();restoreRange();document.execCommand(event.target.value);sync();event.target.value=''});
+    document.querySelector('#insert-image').addEventListener('click',()=>file.click());
+    file.addEventListener('change',()=>{const image=file.files[0];if(!image)return;const reader=new FileReader();reader.onload=()=>{source.focus();restoreRange();document.execCommand('insertImage',false,reader.result);sync()};reader.readAsDataURL(image);file.value=''});
+    document.querySelector('#copy').onclick=async()=>{try{await navigator.clipboard.writeText(output.value);status.textContent='Copied to clipboard.'}catch{output.select();document.execCommand('copy');status.textContent='Copied to clipboard.'}};
+  </script>
+</body>
+</html>
