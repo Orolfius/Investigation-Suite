@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AbuseIPDB Checker</title>
+<style>body{max-width:980px;margin:34px auto;padding:0 18px;font:15px/1.45 system-ui;background:#f6f7fb;color:#172033}h1{margin-bottom:4px}.muted{color:#667085}.controls{display:flex;gap:9px;flex-wrap:wrap;margin:22px 0}input,button{padding:10px 12px;border:1px solid #ccd3de;border-radius:7px;font:inherit}input{min-width:230px;flex:1}button{background:#2956d7;color:#fff;border-color:#2956d7;cursor:pointer}button:hover{background:#214abe}article{background:#fff;border:1px solid #d0d5dd;border-radius:10px;padding:18px;margin-top:15px}dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 18px;margin-bottom:20px}dt{color:#667085}dd{margin:0}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f7f8fa;border:1px solid #e3e7ed;padding:12px;border-radius:7px}.error{color:#b42318}</style></head>
+<body><h1>AbuseIPDB Checker</h1><p class="muted">Enter an IPv4 address or domain. Domain checks resolve an IPv4 address and cover the prior six months.</p>
+<div class="controls"><input id="key" type="password" autocomplete="off" placeholder="AbuseIPDB API key"><input id="input" placeholder="IP address or domain"><button id="check">Check</button></div>
+<p id="status" class="muted">Start <code>common-proxy.ps1</code> first. API keys stay in this browser session only.</p><main id="output"></main>
+<script>
+const escapeHtml=v=>String(v??'Not provided by AbuseIPDB').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const status=document.querySelector('#status'),output=document.querySelector('#output');
+document.querySelector('#check').addEventListener('click',lookup);
+document.querySelector('#input').addEventListener('keydown',e=>{if(e.key==='Enter')lookup()});
+async function lookup(){
+ const key=document.querySelector('#key').value.trim(),value=document.querySelector('#input').value.trim();
+ if(!key||!value){status.textContent='Enter both an AbuseIPDB API key and an IP address or domain.';status.className='error';return}
+ status.textContent='Checking AbuseIPDB…';status.className='muted';output.innerHTML='';
+ try{
+  const response=await fetch('http://127.0.0.1:8787/check?input='+encodeURIComponent(value),{headers:{'X-API-Key':key}});
+  const body=await response.json();if(!response.ok)throw Error(body.error||'Lookup failed.');render(body.data);status.textContent='Lookup complete.';
+ }catch(error){status.textContent=error.message==='Failed to fetch'?'Proxy unavailable. Start common-proxy.ps1.':error.message;status.className='error'}
+}
+function render(data){const reports=(data.reports||[]).map(r=>`${r.reportedAt||'Unknown date'} — ${r.comment||'No comment'}`).join('\n')||'No reports returned for this period.';output.innerHTML=`<article><h2>${escapeHtml(data.ipAddress)}</h2><dl><dt>Abuse confidence</dt><dd>${escapeHtml(data.abuseConfidenceScore)}%</dd><dt>ISP</dt><dd>${escapeHtml(data.isp)}</dd><dt>Usage type</dt><dd>${escapeHtml(data.usageType)}</dd><dt>ASN</dt><dd>Not provided by AbuseIPDB</dd><dt>Domain name</dt><dd>${escapeHtml(data.domain)}</dd><dt>Country</dt><dd>${escapeHtml(data.countryName)} (${escapeHtml(data.countryCode)})</dd><dt>City</dt><dd>Not provided by AbuseIPDB</dd><dt>Reports (last 6 months)</dt><dd>${escapeHtml(data.totalReports)}</dd></dl><h3>Recent reports</h3><pre>${escapeHtml(reports)}</pre></article>`}
+</script></body></html>

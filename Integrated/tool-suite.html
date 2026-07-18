@@ -1,1 +1,30 @@
-
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Investigation Suite</title>
+<style>
+  *{box-sizing:border-box}body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#f4f6f8;color:#17212b}.top{height:62px;padding:0 22px;display:flex;align-items:center;gap:24px;background:#14233a;color:#fff;box-shadow:0 2px 8px #0003}.brand{font-weight:700;white-space:nowrap}.nav{height:100%;display:flex;gap:4px}.nav button{border:0;background:transparent;color:#cdd8e5;padding:0 16px;font:inherit;cursor:pointer;border-bottom:3px solid transparent}.nav button:hover,.nav button.active{background:#203958;color:#fff;border-bottom-color:#48b5ff}.note{margin-left:auto;font-size:12px;color:#b9c7d7}main{height:calc(100vh - 62px)}iframe{display:block;width:100%;height:100%;border:0;background:#fff}@media(max-width:700px){.top{padding:0 10px;gap:5px}.brand{font-size:14px}.nav button{padding:0 8px;font-size:12px}.note{display:none}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">Investigation Suite</div>
+  <nav class="nav" aria-label="Tools">
+    <button class="active" data-src="text-to-html-converter.html">Text to HTML</button>
+    <button data-src="VT%20Lookup/virustotal-related-lookup.html">VirusTotal Lookup</button>
+    <button data-src="abuse-ipdb-suite.html">AbuseIPDB Checker</button>
+  </nav>
+  <div class="note">Shared local proxy: http://127.0.0.1:8787</div>
+</header>
+<main><iframe id="tool" title="Selected tool" src="text-to-html-converter.html"></iframe></main>
+<script>
+  const frame=document.querySelector('#tool');
+  document.querySelectorAll('[data-src]').forEach(button=>button.addEventListener('click',()=>{
+    document.querySelectorAll('[data-src]').forEach(item=>item.classList.remove('active'));
+    button.classList.add('active'); frame.src=button.dataset.src;
+  }));
+</script>
+</body>
+</html>
