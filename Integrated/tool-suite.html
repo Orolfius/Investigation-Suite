@@ -12,13 +12,13 @@
 <header class="top">
   <div class="brand">Investigation Suite</div>
   <nav class="nav" aria-label="Tools">
-    <button class="active" data-src="text-to-html-converter.html">Text to HTML</button>
-    <button data-src="VT%20Lookup/virustotal-related-lookup.html">VirusTotal Lookup</button>
+    <button class="active" data-src="../text-to-html-converter.html">Text to HTML</button>
+    <button data-src="../VT%20Lookup/virustotal-related-lookup.html">VirusTotal Lookup</button>
     <button data-src="abuse-ipdb-suite.html">AbuseIPDB Checker</button>
   </nav>
   <div class="note">Shared local proxy: http://127.0.0.1:8787</div>
 </header>
-<main><iframe id="tool" title="Selected tool" src="text-to-html-converter.html"></iframe></main>
+<main><iframe id="tool" title="Selected tool" src="../text-to-html-converter.html"></iframe></main>
 <script>
   const frame=document.querySelector('#tool');
   document.querySelectorAll('[data-src]').forEach(button=>button.addEventListener('click',()=>{
